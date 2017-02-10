@@ -79,9 +79,9 @@
                 %tr
                   %td= prison.name
                   %td= prison.code
-                  %td= prison.organisation
-                  %td= prison.address
-                  %td= prison.opened
-                  %td= prison.closed
+                  %td= prison.organisation.present? ? prison.organisation : "<span class='unknown'>No data found</span>".html_safe
+                  %td= prison.address.present? ? prison.address : "<span class='unknown'>No data found</span>".html_safe
+                  %td= prison.opened.present? ? prison.opened : "<span class='unknown'>No data found</span>".html_safe
+                  %td= prison.closed.present? ? prison.closed : "<span class='unknown'>No data found</span>".html_safe
       - else
         %h4 Sorry, no prisons found for #{params[:search]}

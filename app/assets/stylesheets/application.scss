@@ -72,6 +72,14 @@ a:visited {
   color: $govuk-blue;
 }
 
+table td {
+  font-size: 16px;
+
+  .unknown {
+    color: $grey-2;
+  }
+}
+
 // Column full width
 // ==========================================================================
 
