@@ -71,12 +71,12 @@
             %col{width: "10%"}
             %thead
               %tr
-                %th Prision name
-                %th Code
-                %th Organisation
-                %th Address
-                %th Opened
-                %th Closed
+                %th= sort_link "name", "Prison name"
+                %th= sort_link "code", "Code"
+                %th= sort_link "organisation", "Organisation"
+                %th= sort_link "address", "Address"
+                %th= sort_link "opened", "Opened"
+                %th= sort_link "closed", "Closed"
             %tbody
               - @prisons.each do |prison|
                 %tr
