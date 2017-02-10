@@ -20,12 +20,10 @@
 # available at http://guides.rubyonrails.org/i18n.html.
 
 en:
-  spina:
-    registers:
-      scaffold_name: Register
-      scaffold_name_plural: Registers
-      title: "%{scaffold_name}"
-      all: "All %{scaffold_name}"
-      new: "New %{scaffold_name}"
-      save: "Save %{scaffold_name}"
-      delete_confirmation: "Are you sure you want to delete <strong>%{subject}'s</strong> register?"
+  date:
+    formats:
+      default: "%d/%m/%Y"
+  time:
+    formats:
+      default: "%d/%m/%Y %H:%M"
+
