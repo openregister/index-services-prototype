@@ -1,0 +1,27 @@
+- content_for :page_title, "#{@page_title} - Registers"
+
+- content_for :head do
+  = stylesheet_link_tag 'application', media: 'all'
+  = csrf_meta_tags
+  %meta{ name: "description", content: "#{@page_description}" }
+
+- content_for :header_class, "with-proposition"
+
+- content_for :proposition_header do
+  .header-proposition
+    .content
+      #nav.proposition-menu
+        = link_to "Registers", root_path, id: "proposition-name"
+
+- content_for :content do
+  %main{id: 'content', role:'main'}
+    .phase-banner
+      %p
+        %strong.phase-tag ALPHA
+        %span This is a new service – your <a href="#">feedback</a> will help us to improve it.
+    = yield
+
+= content_for :body_end do
+  = javascript_include_tag "application"
+
+= render file: 'layouts/govuk_template'

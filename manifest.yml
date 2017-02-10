@@ -1,0 +1,6 @@
+---
+applications:
+- name: register-index-service-demo
+  memory: 64M
+  instances: 2
+  buildpack: ruby_buildpack

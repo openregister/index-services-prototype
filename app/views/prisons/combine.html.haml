@@ -1,0 +1,38 @@
+- @page_title = "Home"
+- @page_description = ""
+
+.breadcrumbs{"data-module" => "track-click"}
+  %ol
+    %li
+      = link_to "Service Toolkit", "https://www.gov.uk/service-toolkit", target: :blank
+    %li
+      = link_to "Registers", root_path
+    %li
+      = link_to "Combined list", "#main"
+
+.container#main
+  .grid-row
+    .column-two-thirds
+      %h1 Combined lists
+
+      %p Lists can be combined to show more details and richer information. You can combine them and use them on your service.
+
+      %p Which lists do you want to combine?
+
+      %form
+        %fieldset
+          %legend.visually-hidden Lists to combine
+          %label.block-label.selection-button-checkbox{for: "list-1"}
+            %input#list-1{name: "lists", type: "checkbox", value: "industry"}
+            Industry
+          %label.block-label.selection-button-checkbox{for: "list-2"}
+            %input#list-2{name: "lists", type: "checkbox", value: "prisons"}
+            Prisons
+          %label.block-label.selection-button-checkbox{for: "list-3"}
+            %input#list-3{name: "lists", type: "checkbox", value: "countries"}
+            Countries
+          %label.block-label.selection-button-checkbox{for: "list-3"}
+            %input#list-3{name: "lists", type: "checkbox", value: "local-auth-eng"}
+            Local authorities in England
+        %br
+        %input{class: "button", type: "submit", value: "Combine these lists"}

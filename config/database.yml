@@ -1,0 +1,14 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+
+development:
+  <<: *default
+  database: REGISTER_INDEX_SERVICE_DEVELOPMENT
+
+production:
+  <<: *default
+  database: REGISTER_INDEX_SERVICE_PRODUCTION
+  username: REGISTER_INDEX_SERVICE
+  password: <%= ENV['REGISTER_INDEX_SERVICE_DATABASE_PASSWORD'] %>

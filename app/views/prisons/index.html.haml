@@ -1,0 +1,87 @@
+- @page_title = "Home"
+- @page_description = ""
+
+.breadcrumbs{"data-module" => "track-click"}
+  %ol
+    %li
+      = link_to "Service Toolkit", "https://www.gov.uk/service-toolkit", target: :blank
+    %li
+      = link_to "Registers", root_path
+    %li
+      = link_to "Prisons in England and Wales", "#main"
+
+.container#main
+  .grid-row
+    .column-two-thirds
+      %h1 Prisons in England and Wales
+      %dl
+        %dt Updated on:
+        %dd 31/01/16
+        %dt Owner:
+        %dd Peter Smith
+
+      %p This list includes the prisons part of the Prisions Estate in England and Wales, including public and contracted prisons, NOMS Immigration Removal Centres operated on behalf of the Home Office and Secure Training Centre
+
+      %details{:role => "group"}
+        %summary{"aria-controls" => "details-content-0", "aria-expanded" => "false", :role => "button"}
+          %span.summary Download a copy of this list
+        #details-content-0.panel.panel-border-narrow{"aria-hidden" => "true"}
+          %ul
+            %li= link_to "CSV", "#"
+            %li= link_to "TSV", "#"
+            %li= link_to "TTL", "#"
+            %li= link_to "JSON", "#"
+            %li= link_to "YAML", "#"
+            %li= link_to "Spreadsheet", "#"
+
+      %details{:role => "group"}
+        %summary{"aria-controls" => "details-content-0", "aria-expanded" => "false", :role => "button"}
+          %span.summary Use this list in your service
+        #details-content-0.panel.panel-border-narrow{"aria-hidden" => "true"}
+          %p Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum.
+
+    .column-one-third
+      %div{class: "govuk-organisation-logo"}
+        %span.logo-container.logo-with-crest.crest-single-identity
+          %span
+            Ministry
+            %br
+            of Justice
+
+  %hr
+
+  .grid-row
+    .column-one-half
+      = link_to "Combine with another list", combine_path
+    .column-one-half
+      = form_tag prisons_path, method: 'get', id: "search", class: "site-search" do
+        .content
+          = text_field_tag :search, params[:search], title: "Search", type: "search", id: "site-search-text", class: "js-search-focus", placeholder: "Search prisons"
+          = submit_tag "Search", class: 'submit'
+
+  %hr
+
+  .grid-row
+    .column-one-whole
+      - if @prisons.present?
+        .table-wrapper
+          %table
+            %thead
+              %tr
+                %th Prision name
+                %th Code
+                %th Organisation
+                %th Address
+                %th Opened
+                %th Closed
+            %tbody
+              - @prisons.each do |prison|
+                %tr
+                  %td= prison.name
+                  %td= prison.code
+                  %td= prison.organisation
+                  %td= prison.address
+                  %td= prison.opened
+                  %td= prison.closed
+      - else
+        %h4 Sorry, no prisons found for #{params[:search]}
