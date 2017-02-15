@@ -13,7 +13,7 @@
 .container#main
   .grid-row
     .column-two-thirds
-      %h1 Prisons in England and Wales
+      %h1 Prisons
       %dl
         %dt Updated on:
         %dd 31/01/16
@@ -65,26 +65,26 @@
           %table
             %col{width: "25%"}
             %col{width: "10%"}
-            %col{width: "25%"}
+            %col{width: "12.5%"}
+            %col{width: "12.5%"}
             %col{width: "20%"}
-            %col{width: "10%"}
-            %col{width: "10%"}
+            %col{width: "20%"}
             %thead
               %tr
                 %th= sort_link "name", "Prison name"
                 %th= sort_link "code", "Code"
-                %th= sort_link "organisation", "Organisation"
-                %th= sort_link "address", "Address"
                 %th= sort_link "opened", "Opened"
                 %th= sort_link "closed", "Closed"
+                %th
+                %th
             %tbody
               - @prisons.each do |prison|
                 %tr
                   %td= prison.name
                   %td= prison.code
-                  %td= prison.organisation.present? ? prison.organisation : "<span class='unknown'>No data found</span>".html_safe
-                  %td= prison.address.present? ? prison.address : "<span class='unknown'>No data found</span>".html_safe
                   %td= prison.opened.present? ? prison.opened.strftime("%d/%m/%Y") : "<span class='unknown'>No data found</span>".html_safe
                   %td= prison.closed.present? ? prison.closed.strftime("%d/%m/%Y") : "<span class='unknown'>No data found</span>".html_safe
+                  %td
+                  %td
       - else
         %h4 Sorry, no prisons found for #{params[:search]}
