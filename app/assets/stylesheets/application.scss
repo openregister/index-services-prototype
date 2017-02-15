@@ -215,3 +215,26 @@ table {
   }
 }
 
+// Checkbox overrides
+.block-label {
+  background: $grey-3;
+  clear: none;
+  font-weight: bold;
+  line-height: 45px;
+  margin-right: 20px;
+  padding: 8px 10px 9px 60px;
+
+  .js-enabled & {
+    &.selection-button-checkbox {
+      &::before {
+        left: 12px;
+        top: 12px;
+      }
+
+      &::after {
+        left: 20px;
+        top: 22px;
+      }
+    }
+  }
+}

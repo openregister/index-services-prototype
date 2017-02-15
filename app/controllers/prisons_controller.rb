@@ -9,6 +9,14 @@ class PrisonsController < ApplicationController
     end
   end
 
+  def combine
+    if params[:search]
+      @prisons = Prison.search(params[:search]).order("#{sort_column} #{sort_direction}")
+    else
+      @prisons = Prison.order("#{sort_column} #{sort_direction}")
+    end
+  end
+
   private
 
   def sortable_columns
