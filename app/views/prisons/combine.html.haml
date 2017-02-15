@@ -13,8 +13,8 @@
 .container#main
   .grid-row
     .column-two-thirds
-      %h1 Combine data with the Prisons list
-      %p You can create a combined list by selecting form the options below. For example, selecting "Companies" and "Addresses" will display the company and address details for every prison
+      %h1 Combine data with the Prison list
+      %p You can create a combined list by selecting from the options below. For example, choosing "Companies" and "Addresses" will display the company and address details for each prison.
 
   .grid-row
     .column-one-whole
@@ -34,7 +34,7 @@
   .search-wrapper
     .grid-row
       .column-one-half
-        = link_to "Combine with another list", combine_path
+        &nbsp;
       .column-one-half
         = form_tag prisons_path, method: 'get', id: "search", class: "site-search" do
           .content

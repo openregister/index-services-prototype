@@ -8,7 +8,7 @@
     %li
       = link_to "Registers", root_path
     %li
-      = link_to "Prisons in England and Wales", "#main"
+      = link_to "Prisons", "#main"
 
 .container#main
   .grid-row
@@ -24,7 +24,7 @@
 
       %details{:role => "group"}
         %summary{"aria-controls" => "details-content-0", "aria-expanded" => "false", :role => "button"}
-          %span.summary Download a copy of this list
+          %span.summary Download this data
         #details-content-0.panel.panel-border-narrow{"aria-hidden" => "true"}
           %ul
             %li= link_to "CSV", "#"
@@ -36,9 +36,13 @@
 
       %details{:role => "group"}
         %summary{"aria-controls" => "details-content-0", "aria-expanded" => "false", :role => "button"}
-          %span.summary Use this list in your service
+          %span.summary Use this list to build your service
         #details-content-0.panel.panel-border-narrow{"aria-hidden" => "true"}
-          %p Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum.
+          %p Registers are lists of information, each register is the most reliable list of its kind. Using registers to build your service means you and your service users will only ever work with one reliable and current source of data.
+          %p
+            = link_to "Building registers", "https://registers.cloudapps.digital/using-registers"
+            %br
+            = link_to "Technical documentation", "https://registers-docs.cloudapps.digital/#technical-user-documentation-for-registers"
 
     .column-one-third
       %div{class: "govuk-organisation-logo"}
