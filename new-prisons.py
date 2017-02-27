@@ -19,6 +19,7 @@
 
 from binascii import hexlify
 import dateutil.parser
+import datetime
 import fileinput
 import hashlib
 import json
@@ -64,30 +65,34 @@ class RsfProcessor(object):
 
 
     def append_entry(self, timestamp, item_hash, key):
-        item_data = self.item_store.Get(item_hash)
-        item = json.loads(item_data.decode('utf-8'))
+        self.item_store.Put(b'prison:'+key, item_hash)
 
-        address = None
-        if 'address' in item:
-            address = self.fetch_address(item['address'])
-
-        print(address)
-
-        street_name = None
-        if address:
-            street_name = address['street']['name']
-
-        end_date = None
-        start_date = None
-        if 'start-date' in item:
-            start_date = dateutil.parser.parse(item['start-date']).date()
-        if 'end-date' in item:
-            end_date = dateutil.parser.parse(item['end-date']).date()
-        with self.pgconn.cursor() as cursor:
-            cursor.execute("INSERT INTO prisons (name, code, address, created_at, updated_at, closed, opened) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                           (item['name'], item['prison'], street_name, dateutil.parser.parse(timestamp), dateutil.parser.parse(timestamp), end_date, start_date))
-            self.pgconn.commit()
         self.entries_processed += 1
+
+
+    def resolve_records(self):
+        for code, item_hash in self.item_store.RangeIter(key_from=b'prison:', key_to=b'prison:ZZZ'):
+            item_data = self.item_store.Get(item_hash)
+            item = json.loads(item_data.decode('utf-8'))
+            address = None
+            if 'address' in item:
+                address = self.fetch_address(item['address'])
+
+            street_name = None
+            if address:
+                street_name = address['street']['name']
+
+            end_date = None
+            start_date = None
+            if 'start-date' in item:
+                start_date = dateutil.parser.parse(item['start-date']).date()
+            if 'end-date' in item:
+                end_date = dateutil.parser.parse(item['end-date']).date()
+            with self.pgconn.cursor() as cursor:
+                cursor.execute("INSERT INTO prisons (name, code, address, created_at, updated_at, closed, opened) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                               (item['name'], item['prison'], street_name, datetime.datetime.now(), datetime.datetime.now(), end_date, start_date))
+                self.pgconn.commit()
+            
 
 
     def process(self, command, args):
@@ -129,4 +134,5 @@ for line in rsf_req.iter_lines():
     print(args)
     proc.process(command,args)
 
+proc.resolve_records()
 proc.close()
