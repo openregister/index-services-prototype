@@ -34,6 +34,10 @@ class RsfProcessor(object):
     def __init__(self):
         self.item_store = leveldb.LevelDB('./item_db')
         self.pgconn = psycopg2.connect("dbname="+POSTGRES_DB)
+        try:
+            self.entries_processed = int.from_bytes(self.item_store.Get(b'entries_processed'), byteorder='big')
+        except KeyError:
+            self.entries_processed = 0
 
 
     def fetch_address(self, uprn):
@@ -83,6 +87,7 @@ class RsfProcessor(object):
             cursor.execute("INSERT INTO prisons (name, code, address, created_at, updated_at, closed, opened) VALUES (%s, %s, %s, %s, %s, %s, %s)",
                            (item['name'], item['prison'], street_name, dateutil.parser.parse(timestamp), dateutil.parser.parse(timestamp), end_date, start_date))
             self.pgconn.commit()
+        self.entries_processed += 1
 
 
     def process(self, command, args):
@@ -99,11 +104,26 @@ class RsfProcessor(object):
     def close(self):
         self.pgconn.close()
         # item_store?
+        self.item_store.Put(b'entries_processed', self.entries_processed.to_bytes(8,byteorder='big'))
 
+
+
+
+register_detail = requests.get('https://prison.discovery.openregister.org/register.json').json()
+total_entries = register_detail['total-entries']
 
 proc = RsfProcessor()
+entries = proc.entries_processed
+print('starting from entry %d' % entries)
+rsf_url = 'https://prison.discovery.openregister.org/download-rsf/%d/%d' % (entries, total_entries)
+rsf_req = requests.get(rsf_url, stream=True)
+if rsf_req.status_code != 200:
+    print("couldn't get RSF from url %s, got status %d" % (rsf_url, rsf_req.status_code))
+    exit()
 
-for line in fileinput.input(mode='rb'):
+rsf_req.encoding = 'utf-8'
+
+for line in rsf_req.iter_lines():
     [command, *args] = line.rstrip().split(b'\t')
     print(command)
     print(args)
