@@ -25,7 +25,6 @@
 from binascii import hexlify
 import dateutil.parser
 import datetime
-import fileinput
 import hashlib
 import json
 import leveldb
