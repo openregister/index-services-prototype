@@ -40,7 +40,7 @@ class RsfProcessor(object):
     def __init__(self):
         self.item_store = leveldb.LevelDB('./item_db')
         self.pgconn = psycopg2.connect("dbname="+POSTGRES_DB)
-        self.pool = gevent.pool.Pool(10) # 10 concurrent requests
+        self.pool = gevent.pool.Pool(200) # concurrent requests
         try:
             self.entries_processed = int.from_bytes(self.item_store.Get(b'entries_processed'), byteorder='big')
         except KeyError:
@@ -88,7 +88,8 @@ class RsfProcessor(object):
 
     def resolve_records(self):
         for code, item_hash in self.item_store.RangeIter(key_from=b'prison:', key_to=b'prison:ZZZ'):
-            self.pool.apply(self.resolve_record, [item_hash])
+            self.pool.spawn(self.resolve_record, item_hash)
+        self.pool.join()
 
 
     def assert_root_hash(self, root_hash):
