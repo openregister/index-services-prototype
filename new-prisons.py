@@ -27,74 +27,86 @@ import psycopg2
 import requests
 
 
-item_store = leveldb.LevelDB('./item_db')
-# yeah, it's global state. bite me.
-pgconn = psycopg2.connect("dbname=REGISTER_INDEX_SERVICE_DEVELOPMENT")
+POSTGRES_DB = "REGISTER_INDEX_SERVICE_DEVELOPMENT"
 
 
-def fetch_address(uprn):
-    print('fetching address ' + uprn)
-    address_r = requests.get('https://address.discovery.openregister.org/record/%s.json' % uprn)
-    if address_r.status_code == 404:
-        print("WARNING: uprn %s resulted in 404" % uprn)
-        return
-    address = requests.get('https://address.discovery.openregister.org/record/%s.json' % uprn).json()
-    print('fetching street ' + address['street'])
-    street = requests.get('https://street.discovery.openregister.org/record/%s.json' % address['street']).json()
-    address['street'] = street
-    return address
+class RsfProcessor(object):
+    def __init__(self):
+        self.item_store = leveldb.LevelDB('./item_db')
+        self.pgconn = psycopg2.connect("dbname="+POSTGRES_DB)
 
 
-def assert_root_hash(root_hash):
-    pass
+    def fetch_address(self, uprn):
+        print('fetching address ' + uprn)
+        address_r = requests.get('https://address.discovery.openregister.org/record/%s.json' % uprn)
+        if address_r.status_code == 404:
+            print("WARNING: uprn %s resulted in 404" % uprn)
+            return
+        address = requests.get('https://address.discovery.openregister.org/record/%s.json' % uprn).json()
+        print('fetching street ' + address['street'])
+        street = requests.get('https://street.discovery.openregister.org/record/%s.json' % address['street']).json()
+        address['street'] = street
+        return address
 
 
-def add_item(item_json):
-    hash = b'sha-256:' + hexlify(hashlib.sha256(item_json).digest())
-    print('putting ' + str(hash))
-    item_store.Put(hash, item_json)
+    def assert_root_hash(self, root_hash):
+        pass
 
 
-def append_entry(timestamp, item_hash, key):
-    item_data = item_store.Get(item_hash)
-    item = json.loads(item_data.decode('utf-8'))
-
-    address = None
-    if 'address' in item:
-        address = fetch_address(item['address'])
-
-    print(address)
-
-    street_name = None
-    if address:
-        street_name = address['street']['name']
-
-    end_date = None
-    start_date = None
-    if 'start-date' in item:
-        start_date = dateutil.parser.parse(item['start-date']).date()
-    if 'end-date' in item:
-        end_date = dateutil.parser.parse(item['end-date']).date()
-    with pgconn.cursor() as cursor:
-        cursor.execute("INSERT INTO prisons (name, code, address, created_at, updated_at, closed, opened) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                       (item['name'], item['prison'], street_name, dateutil.parser.parse(timestamp), dateutil.parser.parse(timestamp), end_date, start_date))
-        pgconn.commit()
+    def add_item(self, item_json):
+        hash = b'sha-256:' + hexlify(hashlib.sha256(item_json).digest())
+        print('putting ' + str(hash))
+        self.item_store.Put(hash, item_json)
 
 
-def getcommand(name):
-    if (name == b'assert-root-hash'):
-        return assert_root_hash
-    if (name == b'add-item'):
-        return add_item
-    if (name == b'append-entry'):
-        return append_entry
-    raise NameError(b'unknown command: ' + name)
+    def append_entry(self, timestamp, item_hash, key):
+        item_data = self.item_store.Get(item_hash)
+        item = json.loads(item_data.decode('utf-8'))
 
+        address = None
+        if 'address' in item:
+            address = self.fetch_address(item['address'])
+
+        print(address)
+
+        street_name = None
+        if address:
+            street_name = address['street']['name']
+
+        end_date = None
+        start_date = None
+        if 'start-date' in item:
+            start_date = dateutil.parser.parse(item['start-date']).date()
+        if 'end-date' in item:
+            end_date = dateutil.parser.parse(item['end-date']).date()
+        with self.pgconn.cursor() as cursor:
+            cursor.execute("INSERT INTO prisons (name, code, address, created_at, updated_at, closed, opened) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                           (item['name'], item['prison'], street_name, dateutil.parser.parse(timestamp), dateutil.parser.parse(timestamp), end_date, start_date))
+            self.pgconn.commit()
+
+
+    def process(self, command, args):
+        if (command == b'assert-root-hash'):
+            self.assert_root_hash(*args)
+        elif (command == b'add-item'):
+            self.add_item(*args)
+        elif (command == b'append-entry'):
+            self.append_entry(*args)
+        else:
+            raise NameError(b'unknown command: ' + command)
+
+
+    def close(self):
+        self.pgconn.close()
+        # item_store?
+
+
+proc = RsfProcessor()
 
 for line in fileinput.input(mode='rb'):
     [command, *args] = line.rstrip().split(b'\t')
     print(command)
     print(args)
-    getcommand(command)(*args)
+    proc.process(command,args)
 
-pgconn.close()
+proc.close()
