@@ -7,14 +7,19 @@
 # it works by doing the following:
 #   - download the prisons RSF
 #   - iterate through each item, store in a local levelDB instance
-#   - iterate through each entry:
-#     - if there's an address, fetch it from the address register, fetch the corresponding street, and store its name
+#   - iterate through each entry, store as a record in a local levelDB instance (using primary key as key):
+#   - finally, for each record key:
+#     - if there's an address in the item, fetch it from the address register,
+#          fetch the corresponding street, and store its name
 #     - store in postgres
+#   - store the number of entries we've processed in levelDB so that we don't process them again
+#
+# This means that each time you run this script, it will only check
+# for new entries in the prison register, but it will re-check all
+# address and street records in the corresponding registers.
 #
 # not (yet) done:
-#   - be more incremental: remember how many entries we've processed and only request from that point forward next time
 #   - check if a record exists in the pg db already before inserting (there's no unique constraint on the prison code field)
-#   - check for address/street register updates as well as prison register updates
 
 
 from binascii import hexlify
