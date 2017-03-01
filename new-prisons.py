@@ -29,17 +29,19 @@ import gevent.pool
 import grequests
 import hashlib
 import json
+import os
 import psycopg2
 import redis
 
 
-POSTGRES_DB = "REGISTER_INDEX_SERVICE_DEVELOPMENT"
+POSTGRES_URL = os.getenv('DATABASE_URL') or "postgresql://localhost/REGISTER_INDEX_SERVICE_DEVELOPMENT"
+REDIS_URL = os.getenv('REDIS_URL') or 'redis://localhost:6379'
 
 
 class RsfProcessor(object):
     def __init__(self):
-        self.item_store = redis.StrictRedis(host='localhost')
-        self.pgconn = psycopg2.connect("dbname="+POSTGRES_DB)
+        self.item_store = redis.StrictRedis.from_url(REDIS_URL)
+        self.pgconn = psycopg2.connect(POSTGRES_URL)
         self.pool = gevent.pool.Pool(200) # concurrent requests
         self.entries_processed = int.from_bytes(self.item_store.get(b'entries_processed') or b'', byteorder='big')
 
