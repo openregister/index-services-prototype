@@ -61,7 +61,7 @@ class RsfProcessor(object):
         return address
 
 
-    def resolve_record(self, item_hash):
+    def resolve_record(self, cursor, item_hash):
         item_data = self.item_store.get(item_hash)
         item = json.loads(item_data.decode('utf-8'))
         address = None
@@ -78,18 +78,19 @@ class RsfProcessor(object):
             start_date = dateutil.parser.parse(item['start-date']).date()
         if 'end-date' in item:
             end_date = dateutil.parser.parse(item['end-date']).date()
-        with self.pgconn.cursor() as cursor:
-            cursor.execute("INSERT INTO prisons (name, code, address, created_at, updated_at, closed, opened) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                           (item['name'], item['prison'], street_name, datetime.datetime.now(), datetime.datetime.now(), end_date, start_date))
-            self.pgconn.commit()
+        cursor.execute("INSERT INTO prisons (name, code, address, created_at, updated_at, closed, opened) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                       (item['name'], item['prison'], street_name, datetime.datetime.now(), datetime.datetime.now(), end_date, start_date))
         
 
 
     def resolve_records(self):
-        for code in self.item_store.keys(b'prison:*'):
-            item_hash = self.item_store.get(code)
-            self.pool.spawn(self.resolve_record, item_hash)
-        self.pool.join()
+        with self.pgconn.cursor() as cursor:
+            cursor.execute("DELETE FROM prisons")
+            for code in self.item_store.keys(b'prison:*'):
+                item_hash = self.item_store.get(code)
+                self.pool.spawn(self.resolve_record, cursor, item_hash)
+            self.pool.join()
+            self.pgconn.commit()
 
 
     def assert_root_hash(self, root_hash):
