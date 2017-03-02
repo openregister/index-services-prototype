@@ -144,8 +144,6 @@ rsf_req.encoding = 'utf-8'
 
 for line in rsf_req.iter_lines():
     [command, *args] = line.rstrip().split(b'\t')
-    print(command)
-    print(args)
     proc.process(command,args)
 
 proc.resolve_records()
