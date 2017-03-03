@@ -22,12 +22,13 @@
 #   - check if a record exists in the pg db already before inserting (there's no unique constraint on the prison code field)
 
 
-from binascii import hexlify
+from binascii import hexlify, unhexlify
 import dateutil.parser
 import datetime
 import gevent.pool
 import grequests
 import hashlib
+from hashlib import sha256
 import json
 import os
 import psycopg2
@@ -38,12 +39,73 @@ POSTGRES_URL = os.getenv('DATABASE_URL') or "postgresql://localhost/REGISTER_IND
 REDIS_URL = os.getenv('REDIS_URL') or 'redis://localhost:6379'
 
 
+
+
+
+# this stuff copypasted from philandstuff/verifiable-log-python
+# -------------8<--------------------
+
+def split_point(n):
+    split = 1;
+    while split < n:
+        split <<= 1
+    return split >> 1
+
+
+def _branch_hash(l,r):
+    h = sha256(b'\x01')
+    h.update(l)
+    h.update(r)
+    return h.digest()
+
+
+def _rootHashFromConsistencyProof(oldSize, newSize, proofNodes, oldRoot, computeNewRoot, startFromOldRoot):
+    if oldSize == newSize:
+        if startFromOldRoot:
+            # this is the b == true case in RFC 6962
+            return oldRoot
+        return proofNodes[-1]
+    k = split_point(newSize)
+    nextHash = proofNodes[-1]
+    if oldSize <= k:
+        leftChild = _rootHashFromConsistencyProof(oldSize, k, proofNodes[:-1], oldRoot, computeNewRoot, startFromOldRoot)
+        if computeNewRoot:
+            return _branch_hash(leftChild, nextHash)
+        else:
+            return leftChild
+    else:
+        rightChild = _rootHashFromConsistencyProof(oldSize - k, newSize - k, proofNodes[:-1], oldRoot, computeNewRoot, False)
+        return _branch_hash(nextHash, rightChild)
+
+
+def _oldRootFromConsistencyProof(oldSize, newSize, proofNodes, oldRoot):
+    return _rootHashFromConsistencyProof(oldSize, newSize, proofNodes, oldRoot, False, True)
+
+def _newRootFromConsistencyProof(oldSize, newSize, proofNodes, oldRoot):
+    return _rootHashFromConsistencyProof(oldSize, newSize, proofNodes, oldRoot, True, True)
+
+def validConsistencyProof(oldRoot, newRoot, oldSize, newSize, proofNodes):
+    if oldSize == 0: # the empty tree is consistent with any future
+        return True
+    if oldSize == newSize:
+        return oldRoot == newRoot and not proofNodes
+    computedOldRoot = _oldRootFromConsistencyProof(oldSize, newSize, proofNodes, oldRoot)
+    computedNewRoot = _newRootFromConsistencyProof(oldSize, newSize, proofNodes, oldRoot)
+    return oldRoot == computedOldRoot and newRoot == computedNewRoot
+
+# -------------8<--------------------
+
+
+EMPTY_ROOT_HASH = b'sha-256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+
+
 class RsfProcessor(object):
     def __init__(self):
         self.item_store = redis.StrictRedis.from_url(REDIS_URL)
         self.pgconn = psycopg2.connect(POSTGRES_URL)
         self.pool = gevent.pool.Pool(200) # concurrent requests
         self.entries_processed = int.from_bytes(self.item_store.get(b'entries_processed') or b'', byteorder='big')
+        self.root_hash = self.item_store.get(b'root_hash') or EMPTY_ROOT_HASH
 
 
     def fetch_address(self, uprn):
@@ -94,7 +156,7 @@ class RsfProcessor(object):
 
 
     def assert_root_hash(self, root_hash):
-        pass
+        self.item_store.set(b'root_hash', root_hash)
 
 
     def add_item(self, item_json):
@@ -120,19 +182,65 @@ class RsfProcessor(object):
             raise NameError(b'unknown command: ' + command)
 
 
-    def close(self):
+    def close(self, new_root_hash):
         self.pgconn.close()
         # item_store?
         self.item_store.set(b'entries_processed', self.entries_processed.to_bytes(8,byteorder='big'))
+        self.item_store.set(b'root_hash', new_root_hash)
 
 
 
+
+def parse_hash(hash_bytestring):
+    print(hash_bytestring)
+    hash_id, hash_hex = hash_bytestring.split(b':')
+    assert hash_id == b'sha-256'
+    return unhexlify(hash_hex)
+
+
+# todo: use total-entries from register_proof_req when that's implemented
+# to avoid timing issues where something is minted in between the two requests
 
 register_detail = grequests.map([grequests.get('https://prison.discovery.openregister.org/register.json')])[0].json()
 total_entries = register_detail['total-entries']
 
 proc = RsfProcessor()
 entries = proc.entries_processed
+old_root = proc.root_hash
+register_proof_url = 'https://prison.discovery.openregister.org/proof/register/merkle:sha-256'
+register_proof_req = grequests.map([grequests.get(register_proof_url)])[0]
+new_root = register_proof_req.json()['root-hash'].encode('utf-8')
+
+
+if entries != 0:
+    # check we're starting from a consistent place
+    consistency_url = 'https://prison.discovery.openregister.org/proof/consistency/%d/%d/merkle:sha-256' % (entries, total_entries)
+    consistency_req = grequests.map([grequests.get(consistency_url)])[0]
+    if register_proof_req.status_code != 200:
+        print("couldn't get register proof from url %s, got status %d" % (register_proof_url, register_proof_req.status_code))
+        exit()
+    if consistency_req.status_code != 200:
+        print("couldn't get consistency proof from url %s, got status %d" % (consistency_url, consistency_req.status_code))
+        exit()
+
+    print(consistency_req.json())
+    print(entries, total_entries, old_root, new_root)
+    print("proof result: " + str(validConsistencyProof(parse_hash(old_root), parse_hash(new_root), entries, total_entries, [parse_hash(node.encode('utf-8')) for node in consistency_req.json()['merkle-consistency-nodes']])))
+
+    proof_is_valid = validConsistencyProof(
+        parse_hash(old_root),
+        parse_hash(new_root),
+        entries,
+        total_entries,
+        [parse_hash(node.encode('utf-8')) for node in consistency_req.json()['merkle-consistency-nodes']])
+
+    if not proof_is_valid:
+        # consistency proof failed, we should start again from the beginning
+        # because the data might have changed
+        print('consistency proof failed, starting again from the beginning')
+        entries = 0
+
+
 print('starting from entry %d' % entries)
 rsf_url = 'https://prison.discovery.openregister.org/download-rsf/%d/%d' % (entries, total_entries)
 rsf_req = grequests.map([grequests.get(rsf_url, stream=True)])[0]
@@ -147,4 +255,4 @@ for line in rsf_req.iter_lines():
     proc.process(command,args)
 
 proc.resolve_records()
-proc.close()
+proc.close(new_root)
