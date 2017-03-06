@@ -54,9 +54,7 @@
 
   .search-wrapper
     .grid-row
-      .column-one-half
-        = link_to "Combine with another list", combine_path
-      .column-one-half
+      .column-one-whole
         = form_tag prisons_path, method: 'get', id: "search", class: "site-search" do
           .content
             = text_field_tag :search, params[:search], title: "Search", type: "search", id: "site-search-text", class: "js-search-focus", placeholder: "Search prisons"
@@ -79,8 +77,8 @@
                 %th= sort_link "code", "Code"
                 %th= sort_link "opened", "Opened"
                 %th= sort_link "closed", "Closed"
-                %th
-                %th
+                %th.address= sort_link "address", "Address"
+                %th.organisation= sort_link "organisation", "Company"
             %tbody
               - @prisons.each do |prison|
                 %tr
@@ -88,7 +86,7 @@
                   %td= prison.code
                   %td= prison.opened.present? ? prison.opened.strftime("%d/%m/%Y") : "<span class='unknown'>No data found</span>".html_safe
                   %td= prison.closed.present? ? prison.closed.strftime("%d/%m/%Y") : "<span class='unknown'>No data found</span>".html_safe
-                  %td
-                  %td
+                  %td.address= prison.address.present? ? prison.address : "<span class='unknown'>No data found</span>".html_safe
+                  %td.organisation= prison.organisation.present? ? prison.organisation : "<span class='unknown'>No data found</span>".html_safe
       - else
         %h4 Sorry, no prisons found for #{params[:search]}
