@@ -54,7 +54,25 @@
 
   .search-wrapper
     .grid-row
-      .column-one-whole
+      .column-one-half
+        %details{:role => "group"}
+          %summary{"aria-controls" => "details-content-0", "aria-expanded" => "false", :role => "button"}
+            %span.summary What are the table headers?
+          #details-content-0.panel.panel-border-narrow{"aria-hidden" => "true"}
+            %dl
+              %dt Name:
+              %dd Prision name
+              %dt Prison:
+              %dd Prision unique identifier
+              %dt Start-date:
+              %dd Start datetime for the applicability of a register entry.
+              %dt End-date:
+              %dd End datetime for the applicability of a register entry.
+              %dt Address:
+              %dd An address in the UK.
+              %dt Operator:
+              %dd An entity performing an operational role.
+      .column-one-half
         = form_tag prisons_path, method: 'get', id: "search", class: "site-search" do
           .content
             = text_field_tag :search, params[:search], title: "Search", type: "search", id: "site-search-text", class: "js-search-focus", placeholder: "Search prisons"
@@ -73,12 +91,12 @@
             %col{width: "20%"}
             %thead
               %tr
-                %th= sort_link "name", "Prison name"
-                %th= sort_link "code", "Code"
-                %th= sort_link "opened", "Opened"
-                %th= sort_link "closed", "Closed"
+                %th= sort_link "name", "Name"
+                %th= sort_link "code", "Prison"
+                %th= sort_link "opened", "Start-date"
+                %th= sort_link "closed", "End-date"
                 %th.address= sort_link "address", "Address"
-                %th.organisation= sort_link "organisation", "Company"
+                %th.organisation= sort_link "organisation", "Operator"
             %tbody
               - @prisons.each do |prison|
                 %tr
