@@ -72,15 +72,19 @@ class RsfProcessor(object):
         if address:
             street_name = address['street']['name']
 
+        address_uprn = None
+        if address:
+            address_uprn = address['address']
+
         end_date = None
         start_date = None
         if 'start-date' in item:
             start_date = dateutil.parser.parse(item['start-date']).date()
         if 'end-date' in item:
             end_date = dateutil.parser.parse(item['end-date']).date()
-        cursor.execute("INSERT INTO prisons (name, code, address, created_at, updated_at, closed, opened) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                       (item['name'], item['prison'], street_name, datetime.datetime.now(), datetime.datetime.now(), end_date, start_date))
-        
+        cursor.execute("INSERT INTO prisons (name, code, address, created_at, updated_at, closed, opened, address_uprn) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                       (item['name'], item['prison'], street_name, datetime.datetime.now(), datetime.datetime.now(), end_date, start_date, address_uprn))
+
 
 
     def resolve_records(self):
@@ -106,7 +110,7 @@ class RsfProcessor(object):
     def append_entry(self, timestamp, item_hash, key):
         self.item_store.set(b'prison:'+key, item_hash)
 
-        self.entries_processed += 1            
+        self.entries_processed += 1
 
 
     def process(self, command, args):
