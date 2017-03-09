@@ -4,4 +4,6 @@ Rails.application.routes.draw do
   root to: 'prisons#index'
 
   resources :prisons
+
+  get 'combined-lists', to: 'prisons#combine', as: 'combine'
 end
